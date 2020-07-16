@@ -47,52 +47,56 @@ def dict_to_tf_example(image_path, integer_label, boxes=None):
         encoded_jpg = f.read()
 
     # check image format
-    encoded_jpg_io = io.BytesIO(encoded_jpg)
-    image = Image.open(encoded_jpg_io)
-    if image.mode == 'L':  # if grayscale
-        rgb_image = np.stack(3 * [np.array(image)], axis=2)
-        encoded_jpg = to_jpeg_bytes(rgb_image)
+    try:
         encoded_jpg_io = io.BytesIO(encoded_jpg)
         image = Image.open(encoded_jpg_io)
-    elif image.mode != 'RGB':
+        if image.mode == 'L':  # if grayscale
+            rgb_image = np.stack(3 * [np.array(image)], axis=2)
+            encoded_jpg = to_jpeg_bytes(rgb_image)
+            encoded_jpg_io = io.BytesIO(encoded_jpg)
+            image = Image.open(encoded_jpg_io)
+        elif image.mode != 'RGB':
+            return None
+        if image.format != 'JPEG':
+            return None
+        assert image.mode == 'RGB'
+
+        assert image.size[0] > 1 and image.size[1] > 1
+        assert (0 <= integer_label) and (integer_label <= 999)
+
+        feature = {
+            'image': _bytes_feature(encoded_jpg),
+            'label': _int64_feature(integer_label)
+        }
+
+        if boxes is not None:
+            xmin_list, ymin_list, xmax_list, ymax_list = [], [], [], []
+            for box in boxes:
+                xmin, ymin, xmax, ymax = box
+
+                assert (xmin < xmax) and (ymin < ymax)
+                assert (xmin <= 1.0) and (xmin >= 0.0)
+                assert (xmax <= 1.0) and (xmax >= 0.0)
+                assert (ymin <= 1.0) and (ymin >= 0.0)
+                assert (ymax <= 1.0) and (ymax >= 0.0)
+
+                xmin_list.append(xmin)
+                ymin_list.append(ymin)
+                xmax_list.append(xmax)
+                ymax_list.append(ymax)
+
+            feature.update({
+                'xmin': _float_list_feature(xmin_list),
+                'ymin': _float_list_feature(ymin_list),
+                'xmax': _float_list_feature(xmax_list),
+                'ymax': _float_list_feature(ymax_list)
+            })
+
+        example = tf.train.Example(features=tf.train.Features(feature=feature))
+        return example
+    except Exception as e:
+        print(e)
         return None
-    if image.format != 'JPEG':
-        return None
-    assert image.mode == 'RGB'
-
-    assert image.size[0] > 1 and image.size[1] > 1
-    assert (0 <= integer_label) and (integer_label <= 999)
-
-    feature = {
-        'image': _bytes_feature(encoded_jpg),
-        'label': _int64_feature(integer_label)
-    }
-
-    if boxes is not None:
-        xmin_list, ymin_list, xmax_list, ymax_list = [], [], [], []
-        for box in boxes:
-            xmin, ymin, xmax, ymax = box
-
-            assert (xmin < xmax) and (ymin < ymax)
-            assert (xmin <= 1.0) and (xmin >= 0.0)
-            assert (xmax <= 1.0) and (xmax >= 0.0)
-            assert (ymin <= 1.0) and (ymin >= 0.0)
-            assert (ymax <= 1.0) and (ymax >= 0.0)
-
-            xmin_list.append(xmin)
-            ymin_list.append(ymin)
-            xmax_list.append(xmax)
-            ymax_list.append(ymax)
-
-        feature.update({
-            'xmin': _float_list_feature(xmin_list),
-            'ymin': _float_list_feature(ymin_list),
-            'xmax': _float_list_feature(xmax_list),
-            'ymax': _float_list_feature(ymax_list)
-        })
-
-    example = tf.train.Example(features=tf.train.Features(feature=feature))
-    return example
 
 
 def _bytes_feature(value):
