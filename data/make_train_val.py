@@ -17,9 +17,9 @@ for file_dir in files:
     random.shuffle(img_files)
     num = int(ratio * len(img_files))
     train = img_files[:num]
-    train = '\n'.join(train)
+    train = '\n'.join(train) + '\n'
     val = img_files[num:]
-    val = '\n'.join(val)
+    val = '\n'.join(val) + '\n'
     with open(train_files, 'a+') as f:
         f.writelines(train)
     with open(val_files, 'a+') as f2:
