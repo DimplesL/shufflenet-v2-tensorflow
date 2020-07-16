@@ -2,6 +2,7 @@ import os
 
 train_dir = ''
 
+
 def progress(percent, width=50):
     '''进度打印功能'''
     if percent >= 100:
