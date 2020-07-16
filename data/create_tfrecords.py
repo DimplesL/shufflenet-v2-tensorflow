@@ -15,12 +15,10 @@ The purpose of this script is to create a set of .tfrecords files
 using a table that contains paths to images and their labels.
 
 Example of use:
-python create_tfrecords.py \
-    --metadata_file=training.csv \
-    --output=/home/vip/qyr/data/orientation_data//train_shards/ \
-    --labels=integer_encoding.json \
-    --boxes=boxes.npy \
-    --num_shards=1000
+python data/create_tfrecords.py \
+    --metadata_file=/home/vip/qyr/data/orientation_data/train.txt \
+    --output=/home/vip/qyr/data/orientation_data/train_shards/ \
+    --num_shards=100
 """
 
 
@@ -44,7 +42,7 @@ def dict_to_tf_example(image_path, integer_label, boxes=None):
     Returns:
         an instance of tf.Example or None.
     """
-    assert image_path.endswith('.JPEG')
+    assert (image_path.endswith('.JPEG') or image_path.endswith('.jpg'))
     with tf.gfile.GFile(image_path, 'rb') as f:
         encoded_jpg = f.read()
 
@@ -153,7 +151,7 @@ def main():
             shard_path = os.path.join(output_dir, 'shard-%04d.tfrecords' % shard_id)
             writer = tf.python_io.TFRecordWriter(shard_path)
 
-        image_path = T  # absolute path to an image
+        image_path = T.strip()  # absolute path to an image
         integer_label = int(image_path.split('/')[-2])  # label_encoder[T.wordnet_id]
         boxes = None  # validation images don't have boxes
         # if bounding_boxes is not None:
