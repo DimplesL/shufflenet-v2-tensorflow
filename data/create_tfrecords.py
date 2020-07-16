@@ -5,11 +5,10 @@ import tensorflow as tf
 import json
 import numpy as np
 import shutil
-import pandas as pd
+import random
 import math
 import argparse
 from tqdm import tqdm
-
 
 """
 The purpose of this script is to create a set of .tfrecords files
@@ -18,7 +17,7 @@ using a table that contains paths to images and their labels.
 Example of use:
 python create_tfrecords.py \
     --metadata_file=training.csv \
-    --output=/mnt/datasets/imagenet/train_shards/ \
+    --output=/home/vip/qyr/data/orientation_data//train_shards/ \
     --labels=integer_encoding.json \
     --boxes=boxes.npy \
     --num_shards=1000
@@ -29,7 +28,7 @@ def make_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--metadata_file', type=str)
     parser.add_argument('-o', '--output', type=str)
-    parser.add_argument('-l', '--labels', type=str)
+    # parser.add_argument('-l', '--labels', type=str)
     parser.add_argument('-b', '--boxes', type=str, default='')
     parser.add_argument('-s', '--num_shards', type=int, default=1)
     return parser.parse_args()
@@ -53,7 +52,7 @@ def dict_to_tf_example(image_path, integer_label, boxes=None):
     encoded_jpg_io = io.BytesIO(encoded_jpg)
     image = Image.open(encoded_jpg_io)
     if image.mode == 'L':  # if grayscale
-        rgb_image = np.stack(3*[np.array(image)], axis=2)
+        rgb_image = np.stack(3 * [np.array(image)], axis=2)
         encoded_jpg = to_jpeg_bytes(rgb_image)
         encoded_jpg_io = io.BytesIO(encoded_jpg)
         image = Image.open(encoded_jpg_io)
@@ -74,7 +73,6 @@ def dict_to_tf_example(image_path, integer_label, boxes=None):
     if boxes is not None:
         xmin_list, ymin_list, xmax_list, ymax_list = [], [], [], []
         for box in boxes:
-
             xmin, ymin, xmax, ymax = box
 
             assert (xmin < xmax) and (ymin < ymax)
@@ -121,24 +119,26 @@ def to_jpeg_bytes(array):
 def main():
     ARGS = make_args()
 
-    with open(ARGS.labels, 'r') as f:
-        label_encoder = json.load(f)
-    assert len(label_encoder) > 0
-    print('Number of classes:', len(label_encoder))
+    # with open(ARGS.labels, 'r') as f:
+    #     label_encoder = json.load(f)
+    # assert len(label_encoder) > 0
+    print('Number of classes:', 30)
 
-    metadata = pd.read_csv(ARGS.metadata_file)
-    metadata = metadata.sample(frac=1)  # shuffle images
-    print('Number of images:', len(metadata))
+    metafile = open(ARGS.metadata_file, 'r')
+    metadata = metafile.readlines()
+    random.shuffle(metadata)  # shuffle images
+    num = len(metadata)
+    print('Number of images:', num)
 
     num_shards = ARGS.num_shards
     num_examples = len(metadata)
-    shard_size = math.ceil(num_examples/num_shards)
+    shard_size = math.ceil(num_examples / num_shards)
     print('Number of images per shard:', shard_size)
 
     bounding_boxes = None
-    if len(ARGS.boxes) > 0:
-        bounding_boxes = np.load(ARGS.boxes)[()]
-        print('Number of images with boxes:', len(bounding_boxes))
+    # if len(ARGS.boxes) > 0:
+    #     bounding_boxes = np.load(ARGS.boxes)[()]
+    #     print('Number of images with boxes:', len(bounding_boxes))
 
     output_dir = ARGS.output
     shutil.rmtree(output_dir, ignore_errors=True)
@@ -147,17 +147,17 @@ def main():
     shard_id = 0
     num_examples_written = 0
     num_skipped_images = 0
-    for T in tqdm(metadata.itertuples()):
-
+    for i in tqdm(range(num)):
+        T = metadata[i]
         if num_examples_written == 0:
             shard_path = os.path.join(output_dir, 'shard-%04d.tfrecords' % shard_id)
             writer = tf.python_io.TFRecordWriter(shard_path)
 
-        image_path = T.path  # absolute path to an image
-        integer_label = label_encoder[T.wordnet_id]
+        image_path = T  # absolute path to an image
+        integer_label = int(image_path.split('/')[-2])  # label_encoder[T.wordnet_id]
         boxes = None  # validation images don't have boxes
-        if bounding_boxes is not None:
-            boxes = bounding_boxes.get(T.just_name, np.empty((0, 4), dtype='float32'))
+        # if bounding_boxes is not None:
+        #     boxes = bounding_boxes.get(T.just_name, np.empty((0, 4), dtype='float32'))
 
         tf_example = dict_to_tf_example(image_path, integer_label, boxes)
         if tf_example is None:
@@ -179,4 +179,5 @@ def main():
     print('Result is here:', ARGS.output)
 
 
-main()
+if __name__ == '__main__':
+    main()

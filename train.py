@@ -22,17 +22,17 @@ GPU_TO_USE = '0'
 BATCH_SIZE = 128
 VALIDATION_BATCH_SIZE = 512
 NUM_EPOCHS = 133  # set 166 for 1.0x version
-TRAIN_DATASET_SIZE = 1281144
+TRAIN_DATASET_SIZE = 940406  # 1281144
 NUM_STEPS = NUM_EPOCHS * (TRAIN_DATASET_SIZE // BATCH_SIZE)
 PARAMS = {
-    'train_dataset_path': '/mnt/datasets/imagenet/train_shards/',
-    'val_dataset_path': '/mnt/datasets/imagenet/val_shards/',
+    'train_dataset_path': '/home/vip/qyr/data/orientation_data/train_shards/',
+    'val_dataset_path': '/home/vip/qyr/data/orientation_data/val_shards/',
     'weight_decay': 4e-5,
     'initial_learning_rate': 0.0625,  # 0.5/8
     'decay_steps': NUM_STEPS,
     'end_learning_rate': 1e-6,
     'model_dir': 'models/run00/',
-    'num_classes': 1000,
+    'num_classes': 30,
     'depth_multiplier': '0.5'  # set '1.0' for 1.0x version
 }
 
