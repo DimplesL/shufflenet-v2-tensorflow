@@ -33,11 +33,14 @@ def make_args():
 
 
 def is_valid_jpg(jpg_file):
-    with open(jpg_file, 'rb') as f:
-        f.seek(-2, 2)
-        buf = f.read()
-        f.close()
-        return buf == b'\xff\xd9'  # 判定jpg是否包含结束字段
+    try:
+        with open(jpg_file, 'rb') as f:
+            f.seek(-2, 2)
+            buf = f.read()
+            f.close()
+            return buf == b'\xff\xd9'  # 判定jpg是否包含结束字段
+    except Exception as e:
+        return False
 
 
 def dict_to_tf_example(image_path, integer_label, boxes=None):
