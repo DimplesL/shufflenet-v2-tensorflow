@@ -32,6 +32,14 @@ def make_args():
     return parser.parse_args()
 
 
+def is_valid_jpg(jpg_file):
+    with open(jpg_file, 'rb') as f:
+        f.seek(-2, 2)
+        buf = f.read()
+        f.close()
+        return buf == b'\xff\xd9'  # 判定jpg是否包含结束字段
+
+
 def dict_to_tf_example(image_path, integer_label, boxes=None):
     """
     Arguments:
@@ -45,7 +53,9 @@ def dict_to_tf_example(image_path, integer_label, boxes=None):
     assert (image_path.endswith('.JPEG') or image_path.endswith('.jpg'))
     with tf.gfile.GFile(image_path, 'rb') as f:
         encoded_jpg = f.read()
-
+    ret = is_valid_jpg(image_path)
+    if ret is False:
+        return None
     # check image format
     try:
         encoded_jpg_io = io.BytesIO(encoded_jpg)
